@@ -5,7 +5,6 @@ from langgraph.prebuilt import create_react_agent
 from langchain_mcp_adapters.tools import load_mcp_tools
 from mcp import ClientSession, StdioServerParameters, stdio_client
 
-
 load_dotenv(override=True)
 
 class BrowserAgent:
@@ -36,15 +35,14 @@ class BrowserAgent:
     async def send_message(self, message: str):
         if not self.agent:
             raise RuntimeError("Agent not initialized. Use 'async with' context manager.")
-        agent_response = await self.agent.ainvoke({"messages": message}, debug=self.debug)
-        return agent_response
+        return self.agent.astream({"messages": [{"role": "user", "content": message}]}, debug=self.debug, stream_mode="values")
 
 
 if __name__ == "__main__":
     async def main():
         async with BrowserAgent(debug=False) as agent:
-            await agent.send_message("Yahoo! JAPANを開いてください")
-            await agent.send_message("検索ボックスに「天気」と入力してください")
+            async for chunk in await agent.send_message("Yahoo! JAPANを開いてください"):
+                print(chunk)
             input("Press Enter to continue...")
 
     asyncio.run(main())
